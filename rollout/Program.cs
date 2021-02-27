@@ -1,6 +1,6 @@
 ﻿using Quokka.Rollout;
-using System;
 using System.IO;
+using System.Linq;
 
 namespace rollout
 {
@@ -8,9 +8,22 @@ namespace rollout
     {
         static void Main()
         {
-            var projectPath = Path.Combine(RolloutAgent.SolutionLocation(), "Quokka.Rollout", "Quokka.Rollout.csproj");
-            var agent = new RolloutAgent(projectPath);
-            agent.BuildAndPublishToLocalFolder(@"c:\code\LocalNuget");
+            var solutions = new[]
+            {
+                "Quokka.RTL"
+            };
+
+            RolloutProcess.Run(new RolloutConfig()
+            {
+                ProjectPath = Path.Combine(RolloutTools.SolutionLocation(), "Quokka.Rollout", "Quokka.Rollout.csproj"),
+                LocalPublishLocation = @"c:\code\LocalNuget",
+                Nuget = new NugetPushConfig()
+                {
+                    APIKeyLocation = @"c:\code\LocalNuget\nuget.key.zip",
+                    APIKeyLocationRequiredPassword = true
+                },
+                ReferenceFolders = solutions.Select(s => Path.Combine(@"c:\code", s)).ToList()
+            });
         }
     }
 }

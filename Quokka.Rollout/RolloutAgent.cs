@@ -1,8 +1,10 @@
-﻿using System;
+﻿using ICSharpCode.SharpZipLib.Zip;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Xml.Linq;
 
 namespace Quokka.Rollout
@@ -23,22 +25,7 @@ namespace Quokka.Rollout
         string ProjectLocation => Path.GetDirectoryName(_projectPath);
         string nupkgName => $"{Path.GetFileNameWithoutExtension(_projectPath)}.{version}.nupkg";
         string nupkgPath => Path.Combine(ProjectLocation, "bin", "Release", nupkgName);
-
-        public static string SolutionLocation(string current = null)
-        {
-            if (current == "")
-                return "";
-
-            current = current ?? Directory.GetCurrentDirectory();
-            if (Directory.EnumerateFiles(current, "*.sln").Any())
-                return current;
-
-            var parent = Path.GetDirectoryName(current);
-            if (parent == current)
-                return null;
-
-            return SolutionLocation(Path.GetDirectoryName(current));
-        }
+        public string TargetPath { get; set; }
 
         string IncrementVersion()
         {
@@ -64,9 +51,11 @@ namespace Quokka.Rollout
             if (!File.Exists(nupkgPath))
                 throw new FileNotFoundException(nupkgPath);
 
-            var targetPath = Path.Combine(publishLocation, nupkgName);
-            File.Copy(nupkgPath, targetPath);
-            Console.WriteLine($"Published to {targetPath}");
+            if (string.IsNullOrWhiteSpace(TargetPath))
+                TargetPath = Path.Combine(publishLocation, nupkgName);
+
+            File.Copy(nupkgPath, TargetPath);
+            Console.WriteLine($"Published to {TargetPath}");
         }
 
         public void BuildAndPublishToLocalFolder(string publishLocation)
@@ -98,6 +87,9 @@ namespace Quokka.Rollout
 
         public void UpgradeReferencesProjects(List<string> referenceProjects)
         {
+            if (referenceProjects == null || !referenceProjects.Any())
+                return;
+
             foreach (var proj in referenceProjects)
             {
                 if (!File.Exists(proj))
@@ -110,14 +102,16 @@ namespace Quokka.Rollout
                 var modified = false;
                 var itemGroups = xProj.Root.Elements("ItemGroup");
                 var packages = itemGroups.SelectMany(g => g.Elements("PackageReference"));
-                foreach (var rtl in packages.Where(p => p.Attribute("Include").Value == "Quokka.RTL"))
+                var packageName = Path.GetFileNameWithoutExtension(_projectPath);
+                foreach (var rtl in packages.Where(p => p.Attribute("Include").Value == packageName))
                 {
                     rtl.Attribute("Version").Value = version;
                     modified = true;
                 }
+
                 if (modified)
                 {
-                    Console.WriteLine(proj);
+                    Console.WriteLine($"Project updated: {proj}");
                     xProj.Save(proj);
                 }
             }
@@ -125,6 +119,9 @@ namespace Quokka.Rollout
 
         public void UpgradeReferencesFolders(List<string> referenceFolders)
         {
+            if (referenceFolders == null || !referenceFolders.Any())
+                return;
+
             var referenceProjects = referenceFolders.SelectMany(folder =>
             {
                 if (!Directory.Exists(folder))
