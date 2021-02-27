@@ -8,40 +8,6 @@ namespace Quokka.Rollout
 {
     public static class RolloutProcess
     {
-        static string MaskedEntry(string message)
-        {
-            string result = "";
-            Console.WriteLine(message);
-
-            while(true)
-            {
-                var key = Console.ReadKey(true);
-                switch (key.Key)
-                {
-                    case ConsoleKey.Enter:
-                        Console.WriteLine();
-                        return result;
-                    case ConsoleKey.Escape:
-                        return "";
-                    case ConsoleKey.Backspace:
-                        if (result.Length > 0)
-                        {
-                            result = result.Substring(0, result.Length - 1);
-
-                            // clear last *
-                            Console.SetCursorPosition(result.Length, Console.CursorTop);
-                            Console.Write(" ");
-                            Console.SetCursorPosition(result.Length, Console.CursorTop);
-                        }
-                        break;
-                    default:
-                        result += key.KeyChar;
-                        Console.Write("*");
-                        break;
-                }
-            }
-        }
-
         static NugetPushConfig Validate(NugetPushConfig config)
         {
             if (config == null)
@@ -55,7 +21,7 @@ namespace Quokka.Rollout
             {
                 if (config.APIKeyLocationRequiredPassword && string.IsNullOrWhiteSpace(config.APIKeyLocationPassword))
                 {
-                    config.APIKeyLocationPassword = MaskedEntry($"Enter password for {config.APIKeyLocation}:");
+                    config.APIKeyLocationPassword = ConsoleTools.MaskedEntry($"Enter password for {config.APIKeyLocation}:");
                     if (string.IsNullOrWhiteSpace(config.APIKeyLocationPassword))
                         return null;
                 }
@@ -88,7 +54,7 @@ namespace Quokka.Rollout
             }
 
             if (string.IsNullOrWhiteSpace(config.APIKey))
-                config.APIKey = MaskedEntry($"Enter API Key:");
+                config.APIKey = ConsoleTools.MaskedEntry($"Enter API Key:");
 
             if (string.IsNullOrWhiteSpace(config.APIKey))
                 return null;
@@ -96,22 +62,32 @@ namespace Quokka.Rollout
             return config;
         }
 
-        public static void Run(RolloutConfig config)
+        public static bool Run(RolloutConfig config)
         {
-            var projectPath = config.ProjectPath;
-            var agent = new RolloutAgent(projectPath);
-            agent.BuildAndPublishToLocalFolder(config.LocalPublishLocation);
-
-            agent.UpgradeReferencesFolders(config.ReferenceFolders);
-            agent.UpgradeReferencesProjects(config.ReferenceProjects);
-
-            if (config.Nuget != null)
+            try
             {
-                var nuget = Validate(config.Nuget);
-                if (nuget != null)
-                    NugetClient.Push(agent.TargetPath, nuget.APIKey);
-                else
-                    Console.WriteLine("Nuget push skipped");
+                var projectPath = config.ProjectPath;
+                var agent = new RolloutAgent(projectPath);
+                agent.BuildAndPublishToLocalFolder(config.LocalPublishLocation);
+
+                agent.UpgradeReferencesFolders(config.ReferenceFolders);
+                agent.UpgradeReferencesProjects(config.ReferenceProjects);
+
+                if (config.Nuget != null)
+                {
+                    var nuget = Validate(config.Nuget);
+                    if (nuget != null)
+                        NugetClient.Push(agent.TargetPath, nuget.APIKey);
+                    else
+                        ConsoleTools.Warning("Nuget push skipped");
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ConsoleTools.Exception(ex);
+                return false;
             }
         }
     }

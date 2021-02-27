@@ -55,7 +55,7 @@ namespace Quokka.Rollout
                 TargetPath = Path.Combine(publishLocation, nupkgName);
 
             File.Copy(nupkgPath, TargetPath);
-            Console.WriteLine($"Published to {TargetPath}");
+            ConsoleTools.Info($"Published to {TargetPath}");
         }
 
         public void BuildAndPublishToLocalFolder(string publishLocation)
@@ -94,7 +94,7 @@ namespace Quokka.Rollout
             {
                 if (!File.Exists(proj))
                 {
-                    Console.WriteLine($"Project file was not found: {proj}");
+                    ConsoleTools.Warning($"Project file was not found: {proj}");
                     continue;
                 }
 
@@ -111,7 +111,7 @@ namespace Quokka.Rollout
 
                 if (modified)
                 {
-                    Console.WriteLine($"Project updated: {proj}");
+                    ConsoleTools.Info($"Project updated: {proj}");
                     xProj.Save(proj);
                 }
             }
@@ -126,7 +126,7 @@ namespace Quokka.Rollout
             {
                 if (!Directory.Exists(folder))
                 {
-                    Console.WriteLine($"Directory was not found: {folder}");
+                    ConsoleTools.Warning($"Directory was not found: {folder}");
                     return Enumerable.Empty<string>();
                 }
 
