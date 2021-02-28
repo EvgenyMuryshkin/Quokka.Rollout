@@ -11,7 +11,8 @@ namespace rollout
         {
             var solutions = new[]
             {
-                "Quokka.RTL"
+                "Quokka",
+                "Quokka.RTL",
             };
 
             RolloutProcess.Run(new RolloutConfig()
