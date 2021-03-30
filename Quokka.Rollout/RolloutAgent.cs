@@ -26,6 +26,7 @@ namespace Quokka.Rollout
         string nupkgName => $"{Path.GetFileNameWithoutExtension(_projectPath)}.{version}.nupkg";
         string nupkgPath => Path.Combine(ProjectLocation, "bin", "Release", nupkgName);
         public string TargetPath { get; set; }
+        public bool NugetBuild { get; set; }
 
         string IncrementVersion()
         {
@@ -38,8 +39,13 @@ namespace Quokka.Rollout
                 .First();
 
             version = currentVersion.Value;
-            var versionParts = version.Split(new[] { '.' });
-            versionParts[versionParts.Length - 1] = $"{int.Parse(versionParts.Last()) + 1}";
+            var versionParts = version.Split(new[] { '.' }).Select(s => int.Parse(s)).ToList();
+
+            if (NugetBuild)
+                versionParts[versionParts.Count - 2]++;
+
+            versionParts[versionParts.Count - 1]++;
+
             version = currentVersion.Value = string.Join(".", versionParts);
             xProject.Save(_projectPath);
 

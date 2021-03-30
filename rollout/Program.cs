@@ -13,6 +13,7 @@ namespace rollout
             {
                 "Quokka",
                 "Quokka.RTL",
+                "Quokka.TCL",
             };
 
             RolloutProcess.Run(new RolloutConfig()

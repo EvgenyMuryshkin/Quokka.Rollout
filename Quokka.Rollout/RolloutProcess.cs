@@ -66,21 +66,20 @@ namespace Quokka.Rollout
         {
             try
             {
+                var nuget = config.Nuget != null ? Validate(config.Nuget) : null;
+
                 var projectPath = config.ProjectPath;
                 var agent = new RolloutAgent(projectPath);
-                agent.BuildAndPublishToLocalFolder(config.LocalPublishLocation);
+                agent.NugetBuild = nuget != null;
 
+                agent.BuildAndPublishToLocalFolder(config.LocalPublishLocation);
                 agent.UpgradeReferencesFolders(config.ReferenceFolders);
                 agent.UpgradeReferencesProjects(config.ReferenceProjects);
 
-                if (config.Nuget != null)
-                {
-                    var nuget = Validate(config.Nuget);
-                    if (nuget != null)
-                        NugetClient.Push(agent.TargetPath, nuget.APIKey);
-                    else
-                        ConsoleTools.Warning("Nuget push skipped");
-                }
+                if (nuget != null)
+                    NugetClient.Push(agent.TargetPath, nuget.APIKey);
+                else
+                    ConsoleTools.Warning("Nuget push skipped");
 
                 return true;
             }
