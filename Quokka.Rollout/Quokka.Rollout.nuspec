@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>Quokka.Rollout</id>
+    <version>1.0.1.26</version>
+    <title>Quokka.Rollout</title>
+    <authors>Evgeny Muryshkin</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <projectUrl>https://github.com/EvgenyMuryshkin/Quokka.Rollout</projectUrl>
+    <iconUrl>https://quokka-fpga.net/logo.png</iconUrl>
+    <description>Tools for building and publishing nuget packages</description>
+    <releaseNotes>Summary of changes made in this release of the package.</releaseNotes>
+    <copyright>Evgeny Muryshkin, 2021</copyright>
+    <tags>Rollout tools</tags>
+  </metadata>
+</package>

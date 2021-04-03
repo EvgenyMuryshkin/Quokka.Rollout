@@ -1,5 +1,4 @@
-﻿using ICSharpCode.SharpZipLib.Zip;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -24,21 +23,42 @@ namespace Quokka.Rollout
         string version = "";
         string ProjectLocation => Path.GetDirectoryName(_projectPath);
         string nupkgName => $"{Path.GetFileNameWithoutExtension(_projectPath)}.{version}.nupkg";
-        string nupkgPath => Path.Combine(ProjectLocation, "bin", "Release", nupkgName);
+        string nupkgPath
+        {
+            get
+            {
+                if (File.Exists(nuspecPah))
+                    return Path.Combine(ProjectLocation, nupkgName);
+
+                return Path.Combine(ProjectLocation, "bin", "Release", nupkgName);
+            }
+        }
+
+        string nuspecPah => "";// Path.Combine(Path.GetDirectoryName(_projectPath), $"{Path.GetFileNameWithoutExtension(_projectPath)}.nuspec");
         public string TargetPath { get; set; }
         public bool NugetBuild { get; set; }
 
-        string IncrementVersion()
+        string IncrementProjectVersion()
         {
             var content = File.ReadAllText(_projectPath);
             var xProject = XDocument.Parse(content);
-            var currentVersion = xProject.Root
+
+            var versionPropNames = new HashSet<string>() { "AssemblyVersion", "FileVersion", "Version" };
+            var versionProps = versionPropNames.Select(p => xProject.Root
                 .Elements("PropertyGroup")
                 .SelectMany(g => g.Elements())
-                .Where(e => e.Name == "Version")
-                .First();
+                .Where(e => e.Name == p)
+                .FirstOrDefault())
+                .Where(p => p != null);                
 
-            version = currentVersion.Value;
+            // all versions should be the same
+            var group = versionProps.GroupBy(p => p.Value);
+            if (group.Count() != 1)
+            {
+                throw new Exception($"Multiple versions are set on assembly: {string.Join(", ", versionProps.Select(v => v.Value))}");
+            }
+
+            version = versionProps.First().Value;
             var versionParts = version.Split(new[] { '.' }).Select(s => int.Parse(s)).ToList();
 
             if (NugetBuild)
@@ -46,10 +66,41 @@ namespace Quokka.Rollout
 
             versionParts[versionParts.Count - 1]++;
 
-            version = currentVersion.Value = string.Join(".", versionParts);
+            version = string.Join(".", versionParts);
+
+            foreach (var currentVersion in versionProps)
+            {
+                currentVersion.Value = version;
+            }
+
             xProject.Save(_projectPath);
 
-            return currentVersion.Value;
+            return version;
+        }
+
+        void IncrementNuspecVersion()
+        {
+            if (!File.Exists(nuspecPah))
+                return;
+
+            var content = File.ReadAllText(nuspecPah);
+            var xProject = XDocument.Parse(content);
+            var versionProp = xProject.Root
+                .Elements("metadata")
+                .SelectMany(g => g.Elements())
+                .Where(e => e.Name == "version")
+                .First();
+
+            versionProp.Value = version;
+            xProject.Save(nuspecPah);
+        }
+
+        string IncrementVersion()
+        {
+            IncrementProjectVersion();
+            IncrementNuspecVersion();
+
+            return version;
         }
 
         void CopyToPublishLocation(string publishLocation)
@@ -76,9 +127,10 @@ namespace Quokka.Rollout
                 var proc = Process.Start(new ProcessStartInfo()
                 {
                     FileName = @"dotnet",
-                    Arguments = "build -c:Release",
+                    Arguments = "pack -c:Release",
                     UseShellExecute = false
                 });
+
                 proc.WaitForExit();
                 if (proc.ExitCode != 0)
                     throw new Exception($"Build failed");
