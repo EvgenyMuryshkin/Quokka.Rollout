@@ -14,6 +14,7 @@ namespace rollout
                 "Quokka",
                 "Quokka.RTL",
                 "Quokka.TCL",
+                "Quokka.Extension.Interop"
             };
 
             RolloutProcess.Run(new RolloutConfig()

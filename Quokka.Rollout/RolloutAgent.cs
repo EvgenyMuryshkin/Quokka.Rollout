@@ -27,14 +27,15 @@ namespace Quokka.Rollout
         {
             get
             {
+                /*
                 if (File.Exists(nuspecPah))
                     return Path.Combine(ProjectLocation, nupkgName);
-
+                */
                 return Path.Combine(ProjectLocation, "bin", "Release", nupkgName);
             }
         }
 
-        string nuspecPah => "";// Path.Combine(Path.GetDirectoryName(_projectPath), $"{Path.GetFileNameWithoutExtension(_projectPath)}.nuspec");
+        string nuspecPah => Path.Combine(Path.GetDirectoryName(_projectPath), $"{Path.GetFileNameWithoutExtension(_projectPath)}.nuspec");
         public string TargetPath { get; set; }
         public bool NugetBuild { get; set; }
 
@@ -124,16 +125,28 @@ namespace Quokka.Rollout
 
                 Directory.SetCurrentDirectory(ProjectLocation);
 
-                var proc = Process.Start(new ProcessStartInfo()
+                var buildProc = Process.Start(new ProcessStartInfo()
+                {
+                    FileName = @"dotnet",
+                    Arguments = "build -c:Release",
+                    UseShellExecute = false
+                });
+
+                buildProc.WaitForExit();
+                if (buildProc.ExitCode != 0)
+                    throw new Exception($"Build failed");
+
+
+                var packProc = Process.Start(new ProcessStartInfo()
                 {
                     FileName = @"dotnet",
                     Arguments = "pack -c:Release",
                     UseShellExecute = false
                 });
 
-                proc.WaitForExit();
-                if (proc.ExitCode != 0)
-                    throw new Exception($"Build failed");
+                packProc.WaitForExit();
+                if (packProc.ExitCode != 0)
+                    throw new Exception($"Pack failed");
 
                 CopyToPublishLocation(publishLocation);
             }

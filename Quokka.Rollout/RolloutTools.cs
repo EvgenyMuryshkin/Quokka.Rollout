@@ -1,24 +1,29 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 
 namespace Quokka.Rollout
 {
     public static class RolloutTools
     {
-        public static string SolutionLocation(string current = null)
+        static string RecursiveSolutionLocation(string current)
         {
-            if (current == "")
-                return "";
+            if (string.IsNullOrWhiteSpace(current))
+                return current;
 
             current = current ?? Directory.GetCurrentDirectory();
             if (Directory.EnumerateFiles(current, "*.sln").Any())
                 return current;
 
-            var parent = Path.GetDirectoryName(current);
-            if (parent == current)
-                return null;
+            return RecursiveSolutionLocation(Path.GetDirectoryName(current));
+        }
 
-            return SolutionLocation(Path.GetDirectoryName(current));
+        public static string SolutionLocation(string current = null)
+        {
+            current = current ?? Directory.GetCurrentDirectory();
+            var solutionPath = RecursiveSolutionLocation(current);
+
+            return solutionPath ?? throw new Exception($"Solution was not found from location: {current}");
         }
     }
 }
