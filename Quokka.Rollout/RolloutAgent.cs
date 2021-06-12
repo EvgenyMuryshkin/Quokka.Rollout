@@ -161,6 +161,8 @@ namespace Quokka.Rollout
             if (referenceProjects == null || !referenceProjects.Any())
                 return;
 
+            var packageName = Path.GetFileNameWithoutExtension(_projectPath);
+
             foreach (var proj in referenceProjects)
             {
                 if (!File.Exists(proj))
@@ -169,21 +171,9 @@ namespace Quokka.Rollout
                     continue;
                 }
 
-                var xProj = XDocument.Load(proj);
-                var modified = false;
-                var itemGroups = xProj.Root.Elements("ItemGroup");
-                var packages = itemGroups.SelectMany(g => g.Elements("PackageReference"));
-                var packageName = Path.GetFileNameWithoutExtension(_projectPath);
-                foreach (var rtl in packages.Where(p => p.Attribute("Include").Value == packageName))
-                {
-                    rtl.Attribute("Version").Value = version;
-                    modified = true;
-                }
-
-                if (modified)
+                if (ProjectTools.UpdateProjectReferences(proj, packageName, version))
                 {
                     ConsoleTools.Info($"Project updated: {proj}");
-                    xProj.Save(proj);
                 }
             }
         }
