@@ -9,6 +9,12 @@ namespace rollout
     {
         static void Main()
         {
+            /*
+            ProjectTools.UpdateProjectReferences(
+                @"C:\code\qusoc\rtl\rtl.extension\rtl.extension.csproj",
+                "Quokka.Extension.Interop",
+                "1.0.1.25");
+            */
             var solutions = new[]
             {
                 "Quokka",
